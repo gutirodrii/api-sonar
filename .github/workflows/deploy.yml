@@ -63,11 +63,11 @@ jobs:
             # docker login ghcr.io -u tuusuario -p tu_token
 
             # Descargamos la nueva imagen
-            docker pull $IMAGE
+            sudo docker pull $IMAGE
 
             # Detenemos y eliminamos el contenedor anterior si existe
-            docker stop tuapi || true
-            docker rm tuapi || true
+            sudo docker stop tuapi || true
+            sudo docker rm tuapi || true
 
             # Levantamos el contenedor con la nueva imagen en el puerto 80 mapeado al 3000 interno
-            docker run -d --name tuapi -p 80:3000 --restart unless-stopped $IMAGE
+            sudo docker run -d --name tuapi -p 80:3000 --restart unless-stopped $IMAGE
