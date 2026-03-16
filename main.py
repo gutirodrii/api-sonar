@@ -32,7 +32,7 @@ def on_startup():
 
 # Request Models
 class UserCreate(BaseModel):
-    id: int
+    id: str
     group_id: Optional[int] = None
     thrower: Optional[int] = None
 
@@ -81,7 +81,7 @@ def create_user(user_data: UserCreate, session: Session = Depends(get_session)):
 
 # Create
 @app.get("/users/{user_id}/state")
-def get_state(user_id: int, session: Session = Depends(get_session)):
+def get_state(user_id: str, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -90,7 +90,7 @@ def get_state(user_id: int, session: Session = Depends(get_session)):
 
 @app.patch("/users/{user_id}/state")
 def update_state(
-    user_id: int, state_data: StateUpdate, session: Session = Depends(get_session)
+    user_id: str, state_data: StateUpdate, session: Session = Depends(get_session)
 ):
     if state_data.state not in [0, 1, 2]:
         raise HTTPException(status_code=400, detail="State must be 0, 1, or 2")
@@ -107,7 +107,7 @@ def update_state(
 
 @app.post("/users/{user_id}/screens")
 def update_screen(
-    user_id: int, update: ScreenUpdate, session: Session = Depends(get_session)
+    user_id: str, update: ScreenUpdate, session: Session = Depends(get_session)
 ):
     screen_record = session.get(Screen, user_id)
     if not screen_record:
@@ -133,7 +133,7 @@ def update_screen(
 
 
 @app.post("/users/{user_id}/throw", response_model=Throw)
-def throw_dice(user_id: int, session: Session = Depends(get_session)):
+def throw_dice(user_id: str, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -148,7 +148,7 @@ def throw_dice(user_id: int, session: Session = Depends(get_session)):
 
 @app.post("/users/{user_id}/claim-first", response_model=FirstThrow)
 def claim_first_throw(
-    user_id: int, claim: ClaimFirstThrow, session: Session = Depends(get_session)
+    user_id: str, claim: ClaimFirstThrow, session: Session = Depends(get_session)
 ):
     # Check if already claimed
     existing = session.exec(
