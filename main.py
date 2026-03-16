@@ -32,8 +32,7 @@ def on_startup():
 
 # Request Models
 class UserCreate(BaseModel):
-    id: str
-    group_id: Optional[int] = None
+    pulsera_id: str
     thrower: Optional[int] = None
 
 
@@ -54,18 +53,29 @@ class ClaimFirstThrow(BaseModel):
 
 @app.post("/users/", response_model=User)
 def create_user(user_data: UserCreate, session: Session = Depends(get_session)):
-    # Verify Pulsera ID exists
-    pulsera = session.get(Pulsera, user_data.id)
+    # Verify Pulsera exists
+    pulsera = session.get(Pulsera, user_data.pulsera_id)
     if not pulsera:
         raise HTTPException(status_code=400, detail="Pulsera ID does not exist")
 
-    # Check if user already exists
-    if session.get(User, user_data.id):
-        raise HTTPException(status_code=400, detail="User with this ID already exists")
+    # Check if pulsera is already linked to a user
+    existing = session.exec(select(User).where(User.pulsera_id == user_data.pulsera_id)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Pulsera already registered")
 
-    # Create User
+    # Determine alternating group_id based on last created user
+    last_user = session.exec(select(User).order_by(User.id.desc())).first()
+    if last_user is None or last_user.group_id == 2:
+        next_group_id = 1
+    else:
+        next_group_id = 2
+
+    # Create User with auto-incremented id
     new_user = User(
-        id=user_data.id, state=0, group_id=user_data.group_id, thrower=user_data.thrower
+        pulsera_id=user_data.pulsera_id,
+        state=0,
+        group_id=next_group_id,
+        thrower=user_data.thrower,
     )
     session.add(new_user)
     session.commit()
@@ -81,7 +91,7 @@ def create_user(user_data: UserCreate, session: Session = Depends(get_session)):
 
 # Create
 @app.get("/users/{user_id}/state")
-def get_state(user_id: str, session: Session = Depends(get_session)):
+def get_state(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -90,7 +100,7 @@ def get_state(user_id: str, session: Session = Depends(get_session)):
 
 @app.patch("/users/{user_id}/state")
 def update_state(
-    user_id: str, state_data: StateUpdate, session: Session = Depends(get_session)
+    user_id: int, state_data: StateUpdate, session: Session = Depends(get_session)
 ):
     if state_data.state not in [0, 1, 2]:
         raise HTTPException(status_code=400, detail="State must be 0, 1, or 2")
@@ -107,7 +117,7 @@ def update_state(
 
 @app.post("/users/{user_id}/screens")
 def update_screen(
-    user_id: str, update: ScreenUpdate, session: Session = Depends(get_session)
+    user_id: int, update: ScreenUpdate, session: Session = Depends(get_session)
 ):
     screen_record = session.get(Screen, user_id)
     if not screen_record:
@@ -133,7 +143,7 @@ def update_screen(
 
 
 @app.post("/users/{user_id}/throw", response_model=Throw)
-def throw_dice(user_id: str, session: Session = Depends(get_session)):
+def throw_dice(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -148,7 +158,7 @@ def throw_dice(user_id: str, session: Session = Depends(get_session)):
 
 @app.post("/users/{user_id}/claim-first", response_model=FirstThrow)
 def claim_first_throw(
-    user_id: str, claim: ClaimFirstThrow, session: Session = Depends(get_session)
+    user_id: int, claim: ClaimFirstThrow, session: Session = Depends(get_session)
 ):
     # Check if already claimed
     existing = session.exec(

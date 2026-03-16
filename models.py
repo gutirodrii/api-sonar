@@ -5,7 +5,8 @@ from sqlmodel import Field, SQLModel
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: str = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pulsera_id: str = Field(foreign_key="pulsera.id", unique=True)
     state: int = Field(description="State must be 0, 1, or 2")
     group_id: Optional[int] = None
     thrower: Optional[int] = None
@@ -15,7 +16,7 @@ class User(SQLModel, table=True):
 class Throw(SQLModel, table=True):
     __tablename__ = "throws"
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="users.id", index=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
     value: int
     throw_time: datetime = Field(default_factory=datetime.utcnow)
 
@@ -25,14 +26,14 @@ class FirstThrow(SQLModel, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True
     )  # This will be the same as throw.id
-    user_id: str = Field(foreign_key="users.id")
+    user_id: int = Field(foreign_key="users.id")
     true_value: int
     claimed_value: int
 
 
 class Screen(SQLModel, table=True):
     __tablename__ = "screens"
-    user_id: str = Field(foreign_key="users.id", primary_key=True)
+    user_id: int = Field(foreign_key="users.id", primary_key=True)
     screen1: Optional[datetime] = None
     screen2: Optional[datetime] = None
     screen3: Optional[datetime] = None
