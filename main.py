@@ -21,8 +21,11 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 origins = [
     "http://localhost:5173",
-    FRONTEND_URL,
+    "http://localhost:3000",
+    "https://sorteo-sonar.vercel.app",
 ]
+if FRONTEND_URL:
+    origins.append(FRONTEND_URL)
 
 app.add_middleware(
     CORSMiddleware,
