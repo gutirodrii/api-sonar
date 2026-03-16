@@ -9,7 +9,12 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
 # For sqlite, we need check_same_thread=False
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 def get_session():
     with Session(engine) as session:

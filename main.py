@@ -10,8 +10,44 @@ from pydantic import BaseModel
 
 from database import engine, get_session
 from models import User, Throw, FirstThrow, Screen, SQLModel, Pulsera
-
 from fastapi.middleware.cors import CORSMiddleware
+
+
+# Response Models
+class UserResponse(BaseModel):
+    userId: int
+    pulseraId: str
+    state: int
+    groupId: Optional[int]
+    thrower: Optional[int]
+    firstThrowId: Optional[int]
+
+
+class StateResponse(BaseModel):
+    userId: int
+    state: int
+
+
+class ScreenResponse(BaseModel):
+    userId: int
+    screen1: Optional[datetime]
+    screen2: Optional[datetime]
+    screen3: Optional[datetime]
+
+
+class ThrowResponse(BaseModel):
+    throwId: int
+    userId: int
+    value: int
+    throwTime: datetime
+
+
+class FirstThrowResponse(BaseModel):
+    throwId: int
+    userId: int
+    trueValue: int
+    claimedValue: int
+
 
 load_dotenv()
 
@@ -62,7 +98,7 @@ class ClaimFirstThrow(BaseModel):
 # Endpoints
 
 
-@app.post("/users/", response_model=User)
+@app.post("/users/", response_model=UserResponse)
 def create_user(user_data: UserCreate, session: Session = Depends(get_session)):
     # Verify Pulsera exists
     pulsera = session.get(Pulsera, user_data.pulsera_id)
@@ -97,19 +133,26 @@ def create_user(user_data: UserCreate, session: Session = Depends(get_session)):
     session.add(new_screen)
     session.commit()
 
-    return new_user
+    return UserResponse(
+        userId=new_user.id,
+        pulseraId=new_user.pulsera_id,
+        state=new_user.state,
+        groupId=new_user.group_id,
+        thrower=new_user.thrower,
+        firstThrowId=new_user.first_throw_id,
+    )
 
 
 # Create
-@app.get("/users/{user_id}/state")
+@app.get("/users/{user_id}/state", response_model=StateResponse)
 def get_state(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user.state
+    return StateResponse(userId=user.id, state=user.state)
 
 
-@app.patch("/users/{user_id}/state")
+@app.patch("/users/{user_id}/state", response_model=StateResponse)
 def update_state(
     user_id: int, state_data: StateUpdate, session: Session = Depends(get_session)
 ):
@@ -123,10 +166,10 @@ def update_state(
     user.state = state_data.state
     session.add(user)
     session.commit()
-    return {"ok": True}
+    return StateResponse(userId=user.id, state=user.state)
 
 
-@app.post("/users/{user_id}/screens")
+@app.post("/users/{user_id}/screens", response_model=ScreenResponse)
 def update_screen(
     user_id: int, update: ScreenUpdate, session: Session = Depends(get_session)
 ):
@@ -150,10 +193,16 @@ def update_screen(
 
     session.add(screen_record)
     session.commit()
-    return {"ok": True}
+    session.refresh(screen_record)
+    return ScreenResponse(
+        userId=screen_record.user_id,
+        screen1=screen_record.screen1,
+        screen2=screen_record.screen2,
+        screen3=screen_record.screen3,
+    )
 
 
-@app.post("/users/{user_id}/throw", response_model=Throw)
+@app.post("/users/{user_id}/throw", response_model=ThrowResponse)
 def throw_dice(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
@@ -164,10 +213,15 @@ def throw_dice(user_id: int, session: Session = Depends(get_session)):
     session.add(new_throw)
     session.commit()
     session.refresh(new_throw)
-    return new_throw
+    return ThrowResponse(
+        throwId=new_throw.id,
+        userId=new_throw.user_id,
+        value=new_throw.value,
+        throwTime=new_throw.throw_time,
+    )
 
 
-@app.post("/users/{user_id}/claim-first", response_model=FirstThrow)
+@app.post("/users/{user_id}/claim-first", response_model=FirstThrowResponse)
 def claim_first_throw(
     user_id: int, claim: ClaimFirstThrow, session: Session = Depends(get_session)
 ):
@@ -202,4 +256,9 @@ def claim_first_throw(
 
     session.commit()
     session.refresh(new_claim)
-    return new_claim
+    return FirstThrowResponse(
+        throwId=new_claim.id,
+        userId=new_claim.user_id,
+        trueValue=new_claim.true_value,
+        claimedValue=new_claim.claimed_value,
+    )
