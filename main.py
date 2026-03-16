@@ -10,10 +10,13 @@ from models import User, Throw, FirstThrow, Screen, SQLModel, Pulsera
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from database import DATABASE_URL
+
 app = FastAPI()
 
 origins = [
     "http://localhost:5173",
+    DATABASE_URL,
 ]
 
 app.add_middleware(
