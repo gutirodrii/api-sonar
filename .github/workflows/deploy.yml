@@ -70,5 +70,5 @@ jobs:
             sudo docker stop tuapi || true
             sudo docker rm tuapi || true
 
-            # Levantamos el contenedor con la nueva imagen en el puerto 80 mapeado al 3000 interno
-            sudo docker run -d --name tuapi -p 80:3000 --restart unless-stopped -e DATABASE_URL="$DATABASE_URL" $IMAGE
+            # Levantamos el contenedor en el puerto 8080 (Nginx hace de reverse proxy HTTPS en el 443)
+            sudo docker run -d --name tuapi -p 8080:3000 --restart unless-stopped -e DATABASE_URL="$DATABASE_URL" $IMAGE
