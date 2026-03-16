@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import Optional
@@ -10,13 +13,15 @@ from models import User, Throw, FirstThrow, Screen, SQLModel, Pulsera
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import DATABASE_URL
+load_dotenv()
 
 app = FastAPI()
 
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+
 origins = [
     "http://localhost:5173",
-    DATABASE_URL,
+    FRONTEND_URL,
 ]
 
 app.add_middleware(
